@@ -36,7 +36,6 @@ logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
 
 class RadioBridge:
 
-	_receive_from_CF_count = 0
 
 	def __init__(self, link_uri):
 		""" Initialize and run the example with the specified link_uri """
@@ -58,7 +57,6 @@ class RadioBridge:
 
 		# Try to connect to the Crazyflie
 		self._cf.open_link(link_uri)
-		#self._cf.link.set_arc(3)
 
 		# Variable used to keep main loop occupied until disconnect
 		self.is_connected = True
@@ -73,64 +71,36 @@ class RadioBridge:
 
 		self._cf.packet_received.add_callback(self._got_packet)
 
-	#def _data_updated(self, mem):
-	#	print('Updated id={}'.format(mem.id))
-	#	print('\tType	  : {}'.format(mem.type))
-	#	print('\tSize	  : {}'.format(mem.size))
-	#	print('\tValid	 : {}'.format(mem.valid))
-	#	print('\tElements  : ')
-	#	for key in mem.elements:
-	#		print('\t\t{}={}'.format(key, mem.elements[key]))
-	#
-	#	self._mems_to_update -= 1
-	#	if self._mems_to_update == 0:
-	#		self._cf.close_link()
 
 	def _got_packet(self, pk):
 		
-		if len(pk.data)>28: #pk.port==CRTP_PORT_MAVLINK: #need a better way of detecting crtp msgs containing mavlink packets
+		if pk.port==CRTP_PORT_MAVLINK: 
 			self._sock.sendto(pk.data, ('127.0.0.1', 14550))
-		 	self._receive_from_CF_count += 1
+		 	
 
-		 	for i in range(len(pk.data)):
-		 		sys.stdout.write('%d ' % pk.data[i]) #, sep=' ', end='', flush=True
-		 	sys.stdout.write('count_received=%d' % self._receive_from_CF_count)
-		 	sys.stdout.write('\n')
 
 		
 
-	def _forward(self, data, count):
+	def _forward(self, data):
 		pk = CRTPPacket()
 		pk.port = CRTP_PORT_MAVLINK #CRTPPort.COMMANDER
 		pk.data = data #struct.pack('<fffH', roll, -pitch, yaw, thrust)
 		self._cf.send_packet(pk)
 		
-		# for i in range(len(data)):
-		# 	sys.stdout.write('%d ' % ord(data[i])) #, sep=' ', end='', flush=True
-		# sys.stdout.write('count_sent=%d' % count)
-		# sys.stdout.write('\n')
         
 
         
 
 	def _server(self):
-		count=0
 		while True:
 			#print >>sys.stderr, '\nwaiting to receive message'
 
 			# Only receive what can be sent in one message
 			data, address = self._sock.recvfrom(256) #received from QGC
 
-			#print '\nreceived %s bytes from %s' % (len(data), address)  #>>sys.stderr,
 
 			for i in range(0, len(data), 30):
-				count+=1
-				self._forward(data[i:(i+30)], count) #sending from QGC to CF
-
-			#print >>sys.stderr, data
-
-			#if data:
-			#	self._forward(data)
+				self._forward(data[i:(i+30)]) #sending from QGC to CF
 	
 
 
@@ -179,11 +149,6 @@ if __name__ == '__main__':
 		print('No Crazyflies found, cannot run example')
 
 
-		#while True:
-		#	le._server()
-			
-
-		print('here')
 	# The Crazyflie lib doesn't contain anything to keep the application alive,
 	# so this is where your application should do something. In our case we
 	# are just waiting until we are disconnected.
@@ -192,11 +157,3 @@ if __name__ == '__main__':
 			time.sleep(1)
 	except KeyboardInterrupt:
 		sys.exit(1)
-
-
-#if __name__ == '__main__':
-#	cflib.crtp.init_drivers(enable_debug_driver=False)
-#
-#	# le = AutonomousSequence("radio://0/80/2M/E7E7E7E701")
-#	le = AutonomousSequence('radio://0/23/2M')
-#
