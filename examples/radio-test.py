@@ -13,10 +13,11 @@
 '''
 import argparse
 
-import matplotlib.pyplot as plt
-import numpy as np
 
 import cflib.drivers.crazyradio as crazyradio
+
+import matplotlib.pyplot as plt
+import numpy as np
 
 radio = crazyradio.Crazyradio()
 
